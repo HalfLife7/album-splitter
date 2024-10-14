@@ -11,6 +11,12 @@ from .tag_file import tag_file
 from .utils.secure_filename import secure_filename
 from .utils.ytdl_interface import ydl_opts
 
+import re
+
+def sanitize_filename(filename):
+    # Replace any problematic characters with underscores or remove them
+    return re.sub(r'[\\/*?:"<>|]', "_", filename)
+
 
 def get_parser():
     parser = argparse.ArgumentParser(
@@ -151,16 +157,18 @@ def main():
 
     if args.dry_run:
         for track in tracks:
+            sanitized_title = sanitize_filename(track.title)  # Sanitize on-the-fly
             fmt_timestamp = datetime.timedelta(seconds=track.start_timestamp)
-            print(f"{track.title} - {fmt_timestamp}")
+            print(f"\t{sanitized_title} - {fmt_timestamp}")
         for k, v in tag_data.items():
             print(f"{k} - {v}")
         exit()
     else:
         print("Found the following tracks: ")
         for track in tracks:
+            sanitized_title = sanitize_filename(track.title)  # Sanitize on-the-fly
             fmt_timestamp = datetime.timedelta(seconds=track.start_timestamp)
-            print(f"\t{track.title} - {fmt_timestamp}")
+            print(f"\t{sanitized_title} - {fmt_timestamp}")
     input_file = None
     if args.audio_file:
         input_file = Path(args.audio_file)
@@ -191,6 +199,7 @@ def main():
     print("Tagging files, almost done...")
     for index, file in enumerate(output_files):
         track = tracks[index]
+        sanitized_title = sanitize_filename(track.title)
         tag_data.update({"title": str(track.title), "tracknumber": index + 1})
         tag_file(file, tag_data)
     print(f"Done! You can find your tracks in {outfolder}")
